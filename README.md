@@ -1,6 +1,6 @@
 # Twitter Streaming
 
-Real-time twitter hashtag trending and sentiment analysis
+Real-time Twitter hashtag trending and sentiment analysis using Kafka, Spark Streaming and Flask.
 
 ## Setup
 * Install [Zookeeper](https://zookeeper.apache.org/releases.html) for Kafka
@@ -14,7 +14,7 @@ Real-time twitter hashtag trending and sentiment analysis
 
     `bin/zkServer.sh start`
     
-* Start Kafka in server
+* Start Kafka in your server
 
     `kafka-server-start /usr/local/etc/kafka/server.properties`
 
