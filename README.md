@@ -40,4 +40,6 @@ Real-time Twitter hashtag trending and sentiment analysis using Kafka, Spark Str
     `python dashboard/dashboard_app.py`
 
 ## Demo
+track='china'
+
 ![](https://github.com/joeyhaohao/twitter_streaming/blob/master/demo.png)
