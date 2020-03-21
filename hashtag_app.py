@@ -1,17 +1,19 @@
-from pyspark import SparkContext, SparkConf
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-from pyspark.streaming import StreamingContext
-from pyspark.sql import Row, SQLContext
-from collections import namedtuple
 import sys
 import os
 import requests
+from pyspark import SparkContext, SparkConf
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.streaming import StreamingContext
+from pyspark.streaming.kafka import KafkaUtils
+from pyspark.sql import Row, SQLContext
+from collections import namedtuple
 
-HOST = "localhost"
-PORT = 9001
+# HOST = "localhost"
+# PORT = 9001
+ZOOKEEPER = 'localhost:2181'
 
-def aggregate_cnt(new_values, total_sum):
-    return sum(new_values) + (total_sum or 0)
+# def aggregate_cnt(new_values, total_sum):
+#     return sum(new_values) + (total_sum or 0)
 
 def process_rdd(time, rdd):
     print("------------- %s -------------" % str(time))
@@ -43,6 +45,8 @@ def send_to_dashboard(df):
 
 if __name__ == "__main__":
     os.environ["PYSPARK_PYTHON"] = "/usr/local/bin/python3"
+    # arguments for spark-submit
+    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.0.2 pyspark-shell'
 
     # create spark configuration
     conf = SparkConf()
@@ -52,18 +56,32 @@ if __name__ == "__main__":
     # streaming data will be divided into batches every 5s
     ssc = StreamingContext(sc, 5)
     # compute data in a 10min window for every 5s
-    dataStream = ssc.socketTextStream(HOST, PORT).window(windowDuration=600, slideDuration=5)
+    # dataStream = ssc.socketTextStream(HOST, PORT).window(windowDuration=600, slideDuration=5)
+    dataStream = KafkaUtils.createStream(ssc, ZOOKEEPER, 'spark-streaming', {'china': 1}) \
+        .window(windowDuration=600, slideDuration=5)
+
+    # sqlContext = SQLContext(sc)
+    # spark = sqlContext.sparkSession
+    # df = spark \
+    #     .readStream \
+    #     .format("kafka") \
+    #     .option("kafka.bootstrap.servers", "localhost:9092") \
+    #     .option("subscribe", "china") \
+    #     .load()
+    # df.show().start()
 
     # fields = ("hashtag", "cnt")
-    # Tweet = namedtuple('Tweet', fields)
-    (dataStream.flatMap(lambda line: line.split(" "))  # Splits to a list
-     .filter(lambda word: word.startswith("#") and len(word) > 1)  # Checks for hashtag calls
-     .map(lambda word: (word.lower(), 1))  # Lower cases the word
-     .reduceByKey(lambda a, b: a + b)  # Reduces
+    # Hashtag = namedtuple('Hashtag', fields)
+    (dataStream.flatMap(lambda line: line[1].split(" "))  #split to a list
+     .filter(lambda word: word.startswith("#") and len(word) > 1)  # filter hashtag
+     .map(lambda word: (word.lower(), 1))  # lower case, map
+     .reduceByKey(lambda a, b: a + b)  # reduce
      # .updateStateByKey(aggregate_cnt)
-     # .map(lambda rec: Tweet(rec[0], rec[1]))  # Stores in a Tweet Object
-     .foreachRDD(process_rdd))
+     # .map(lambda rec: Hashtag(rec[0], rec[1]))  # store in a Hashtag Object
      # .foreachRDD(lambda rdd: rdd.toDF().limit(10).registerTempTable("tweets")))
+     .foreachRDD(process_rdd))
+
+    # dataStream.pprint()
 
     ssc.checkpoint("checkpoints_hashtag")
     ssc.start()

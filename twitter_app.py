@@ -1,7 +1,10 @@
 import socket
-import tweepy
 import json
 import _thread
+from tweepy.streaming import StreamListener
+from tweepy import OAuthHandler
+from tweepy import Stream
+from kafka import KafkaProducer
 
 ACCESS_TOKEN = ''
 ACCESS_SECRET = ''
@@ -10,7 +13,7 @@ CONSUMER_SECRET = ''
 HOST = "localhost"
 PORT = 9001
 
-class TweetsStreamListener(tweepy.StreamListener):
+class TweetsStreamListener(StreamListener):
 
     def __init__(self, client, addr):
         self.client = client
@@ -20,20 +23,21 @@ class TweetsStreamListener(tweepy.StreamListener):
         print(status.text)
 
     def on_data(self, data):
-        msg = None
         try:
             msg = json.loads(data)
             print("------------------------------------------")
             print(msg['text'])
         except BaseException as e:
             print("Error receiving data: %s" % str(e))
+            return True
 
-        # client closed
+        # send to spark client
         try:
-            tweet = msg['text'] + '|'
-            self.client.send(tweet.encode('utf-8'))
+            # tweet = msg['text'] + '|'
+            # self.client.send(tweet.encode('utf-8'))
+            self.client.send("china", msg['text'].encode('utf-8'))
         except BaseException as e:
-            print("Error sending data to client %s: %s" % (addr, str(e)))
+            print("Error sending data to client %s: %s" % (self.addr, str(e)))
             return False
         return True
 
@@ -46,8 +50,8 @@ class TweetsStreamListener(tweepy.StreamListener):
 def create_listener(client, addr):
     print("Client connected", addr)
     streamListener = TweetsStreamListener(client, addr)
-    stream = tweepy.Stream(auth=auth, listener=streamListener)
-    stream.filter(languages=['en'], track=['life'])
+    stream = Stream(auth=auth, listener=streamListener)
+    stream.filter(track=['china'])  #languages filter cause IncompleteRead error
 
 if __name__ == "__main__":
     # Create a socket object
@@ -57,8 +61,12 @@ if __name__ == "__main__":
     sock.listen(5)
     print("Listening on port: %s" % PORT)
 
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
     auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
-    while True:
-        client, addr = sock.accept()
-        _thread.start_new_thread(create_listener, (client, addr))
+    producer = KafkaProducer(bootstrap_servers="localhost:9092")
+    create_listener(producer, 9092)
+
+    # send to multiple clients using sockets
+    # while True:
+    #     client, addr = sock.accept()
+    #     _thread.start_new_thread(create_listener, (client, addr))

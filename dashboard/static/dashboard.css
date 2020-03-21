@@ -1,0 +1,13 @@
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+}
+#tweet {
+    width: 80%;
+}
+#neg {
+    background-color: #f1f1c1;
+}

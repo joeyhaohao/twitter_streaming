@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8"/>
         <title>Twitter Streaming</title>
+        <link rel="stylesheet" href="static/dashboard.css?v=1.1">
         <script src='static/Chart.min.js'></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-
     </head>
 
     <body>
@@ -15,9 +15,9 @@
                 <canvas id="chart"></canvas>
             </div>
 
-            <div style="width:1000px; height:500px">
-                <h2>Tweet sentiment</h2>
-                <table id="table-box" border="2" cellpadding="4" cellspacing="5">
+            <div style="width:800px">
+                <h2>Tweet Sentiment</h2>
+                <table id="table">
                 </table>
             </div>
         </center>
@@ -78,18 +78,17 @@
                     myChart.update();
                     var tableHtml = '';
                     for (i = 0; i < data.stweets.length; i++) {
-                        var neg = JSON.parse(data.sprobs[i])[0] > 0.9;
-                        tableHtml += '<tr>';
-                        if (neg) {
-                            tableHtml += '<td style="color: red">' + data.stweets[i] + '</td>';
-                            tableHtml += '<td style="color: red">' + data.sprobs[i] + '</td>';
+                        if (JSON.parse(data.sprobs[i])[0] > 0.9) {
+                            // negtive tweet
+                            tableHtml += '<tr id=\'neg\'>';
                         } else {
-                            tableHtml += '<td>' + data.stweets[i] + '</td>';
-                            tableHtml += '<td>' + data.sprobs[i] + '</td>';
+                            tableHtml += '<tr>';
                         }
+                        tableHtml += '<td id=\'tweet\'>' + data.stweets[i] + '</td>';
+                        tableHtml += '<td>' + data.sprobs[i] + '</td>';
                         tableHtml += '</tr>';
                     }
-                    $("#table-box").html(tableHtml)
+                    $("#table").html(tableHtml)
                 });
             }, 5000);
         </script>
