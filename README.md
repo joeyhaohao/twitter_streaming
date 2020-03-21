@@ -40,4 +40,4 @@ Real-time twitter hashtag trending and sentiment analysis
     `python dashboard/dashboard_app.py`
 
 ## Demo
-![](https://github.com/joeyhaohao/twitter-streaming/blob/master/demo.png)
+![](https://github.com/joeyhaohao/twitter_streaming/blob/master/demo.png)
